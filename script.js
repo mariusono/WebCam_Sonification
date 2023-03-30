@@ -48,7 +48,7 @@ const bassFreq = 24;
 for (let i = 0; i < 15; i++) {
     oscillators.push(new Tone.Oscillator({
         frequency: bassFreq * i,
-        type: "sine",
+        type: "sawtooth4",
         volume: -Infinity,
         detune: Math.random() * 30 - 15,
     }));
