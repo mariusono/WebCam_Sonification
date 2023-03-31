@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8"> 
+    <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
     <!-- <script defer src="face-api.min.js"></script> -->
     <script defer src="https://unpkg.dev/@vladmandic/face-api/dist/face-api.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.36/Tone.js"></script>
     <script defer src="https://unpkg.com/@tonejs/ui/build/code.js"></script>
     <script defer src="script.js"></script>
-  
+
     <!-- <style>
         body {
             margin: 0;
@@ -23,23 +25,44 @@
         }
     </style> -->
 </head>
+
 <body>
     <!-- <h1>Test faceAPI now</h1> -->
 
+    <div class="center">
+        <button id="button_1">Start Audio!</button>
+        <button id="button_2">Stop Audio!</button> <br>
 
-    <button id="button_1">Start Audio!</button>
-    <button id="button_2">Stop Audio!</button>
+        <span class="sliders">
+            <h2>Volume</h2>
+            Gain = <i id='Gain'></i><br>
+            <input id='sliderInterval' type="range" min="0" max="10000" value="0" oninput="setGain(this.value)"><br>
+        </span>
 
-    <h2>Global Volume</h2>
-
-    Gain = <i id='Gain'></i><br>
-    <input id='sliderInterval' type="range" min="0" max="10000" value="0" oninput="setGain(this.value)"><br><br>
-
-    <h2>Reverb</h2>
-    Room Size = <i id='RoomSize'></i><br>
-    <input id='sliderInterval' type="range" min="0" max="10000" value="0" oninput="setRoomSize(this.value)"><br>
-    <!-- Dampening = <i id='Dampening'></i><br>
+        <span class="sliders">
+            <h2>Reverb</h2>
+            Room Size = <i id='RoomSize'></i><br>
+            <input id='sliderInterval' type="range" min="0" max="10000" value="0" oninput="setRoomSize(this.value)"><br>
+        </span>
+        <!-- Dampening = <i id='Dampening'></i><br>
     <input id='sliderInterval' type="range" min="0" max="10000" value="5000" oninput="setDampening(this.value)"><br><br> -->
+
+        <span class="sliders">
+            <h2>Detune</h2>
+            Detune Amount = <i id='DetuneAmount'></i><br>
+            <input id='sliderInterval' type="range" min="0" max="10000" value="0" oninput="setDetune(this.value)"><br>
+        </span>
+
+        <span class="sliders">
+            <h2>Base Freq</h2>
+            Base Freq Factor = <i id='BaseFreqFact'></i><br>
+            <input id='sliderInterval' type="range" min="0" max="10000" value="0"
+                oninput="setBaseFreqFact(this.value)"><br>
+        </span>
+
+        <video id="video" width="720" height="560" autoplay muted></video>
+
+    </div>
 
 
 
@@ -52,6 +75,6 @@
     <input id='loopOnOff' type="checkbox" onchange="setLoopOnOff(this.checked)"><br><br> -->
 
 
-    <video id="video" width="720" height="560" autoplay muted></video>
 </body>
+
 </html>

@@ -28,6 +28,13 @@ function average(array) {
     return avg;
 }
 
+function mag2db(value){
+    return 20 * Math.log10(value);
+}
+
+function db2mag(value){
+    return 10**(value/20);
+}
 
 //---------------------------------------------------------------------------------------------------------------
 
@@ -42,15 +49,26 @@ const button_2 = document.getElementById("button_2");
 let flag_audio_on_off = false;
 
 // create an array of sawtooth oscillators with Tone.js
+const numOscillators = 20;
 const oscillators = [];
-const bassFreq = 24;
 
-for (let i = 0; i < 15; i++) {
+const maxDB = -10;
+const minDB = -14;
+
+let volumesArray = [ ...Array(numOscillators).keys() ].map( i => i+1);
+volumesArray = volumesArray.map(n => linearMapping(0, -20, 1, numOscillators, n) );
+// volumesArray = volumesArray.map(n => db2mag(n) ); // db values to mag
+
+console.log(volumesArray);
+
+const bassFreq = 30;
+
+for (let i = 0; i < numOscillators; i++) {
     oscillators.push(new Tone.Oscillator({
         frequency: bassFreq * i,
-        type: "sawtooth4",
+        type: "sine",
         volume: -Infinity,
-        detune: Math.random() * 30 - 15,
+        // detune: Math.random() * 30 - 15,
     }));
 }
 
@@ -66,6 +84,14 @@ panner.setPosition(0, 0, 0);
 let xPos = 0.0;
 let yPos = 0.0;
 let zPos = 0.0;
+
+// initialize detune
+let detuneVal = 0;
+document.getElementById('DetuneAmount').innerText = parseFloat(detuneVal).toFixed(4);
+
+// initialize base freq fact
+baseFreqFact = 1;
+document.getElementById('BaseFreqFact').innerText = parseFloat(baseFreqFact).toFixed(4);
 
 function updateListenerPos() {
     // Tone.Listener.positionX.value = -xPos;
@@ -121,9 +147,9 @@ button_1.addEventListener("click", async () => {
     // Tone.Transport.bpm.value = 480; // working with '4n', i.e. quarter notes afterwards.. so equivalent to '8n' eigth notes at 120 bpm
     // Tone.Transport.bpm.value = 120; 
 
-    oscillators.forEach(o => {
+    oscillators.forEach((o,index) => {
         o.start();
-        o.volume.rampTo(-25, 1);
+        o.volume.rampTo(volumesArray[index], 1);
     });
 
     flag_audio_on_off = true;
@@ -151,7 +177,8 @@ function setHarmonicity(v) {
     if (v < 20) v = 20;
     if (v > 90) v = 90;
 
-    valHarmonicity = linearMapping(0.5, 4.0, 20, 90, v);
+    // valHarmonicity = linearMapping(0.5, 4.0, 20, 90, v);
+    valHarmonicity = linearMapping(0, 1, 20, 90, v); // 
     // valPlayback = exponentialMapping(0.0, 4.0, 0, 1000, 3., v);
 
     //   console.log(prevTimeBetweenBeats);
@@ -165,7 +192,9 @@ function setHarmonicity(v) {
 
         // Change base freqs of oscillators
         oscillators.forEach((osc, i) => {
-            osc.frequency.rampTo(bassFreq * i * valHarmonicity, 0.1);
+            osc.frequency.rampTo(bassFreq * i * linearMapping(1, baseFreqFact, 0, 1, valHarmonicity), 0.5);
+            console.log(baseFreqFact);
+            osc.detune.rampTo(Math.random() * detuneVal * valHarmonicity, 0.5);
         });
     }
 
@@ -195,6 +224,18 @@ function setDampening(v) {
     let dampSize = linearMapping(0.0, 10000.0, 0, 10000, v); // db linear Scale
     freeverb.dampening = dampSize;  // weird that it doesn't have .value ... 
     document.getElementById('Dampening').innerText = parseFloat(dampSize).toFixed(4);
+    // console.log(freeverb.dampening);
+}
+
+function setDetune(v) {
+    detuneVal = linearMapping(0, 1200, 0, 10000, v); // db linear Scale
+    document.getElementById('DetuneAmount').innerText = parseFloat(detuneVal).toFixed(4);
+    // console.log(freeverb.dampening);
+}
+
+function setBaseFreqFact(v) {
+    baseFreqFact = linearMapping(0.5, 3, 0, 10000, v); // db linear Scale
+    document.getElementById('BaseFreqFact').innerText = parseFloat(baseFreqFact).toFixed(4);
     // console.log(freeverb.dampening);
 }
 
