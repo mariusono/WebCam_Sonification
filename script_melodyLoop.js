@@ -28,12 +28,12 @@ function average(array) {
     return avg;
 }
 
-function mag2db(value){
+function mag2db(value) {
     return 20 * Math.log10(value);
 }
 
-function db2mag(value){
-    return 10**(value/20);
+function db2mag(value) {
+    return 10 ** (value / 20);
 }
 
 //---------------------------------------------------------------------------------------------------------------
@@ -48,33 +48,31 @@ const button_2 = document.getElementById("button_2");
 
 let flag_audio_on_off = false;
 
-// create an array of sawtooth oscillators with Tone.js
-const numOscillators = 15;
-const oscillators = [];
- 
-let volumesArray = [ ...Array(numOscillators).keys() ].map( i => 1/(i+1));
-// let volumesArray = [ ...Array(numOscillators).keys() ].map( i => 1);
 
-// volumesArray = volumesArray.map(n => linearMapping(0, -20, 1, numOscillators, n) );
-volumesArray = volumesArray.map(n => mag2db(n) ); // db values to mag
+// // create a new synth with Tone.js
+// const synth = new Tone.PolySynth(Tone.Synth, {
+//     oscillator: {
+//         type: "sawtooth"
+//     }
+// });
 
-console.log(volumesArray);
+const synth = new Tone.Synth( {
+    oscillator: {
+        type: "sawtooth"
+    }
+});
 
-const bassFreq = 55;
 
-for (let i = 0; i < numOscillators; i++) {
-    oscillators.push(new Tone.Oscillator({
-        frequency: bassFreq * i,
-        type: "sawtooth4",
-        volume: -Infinity,
-        // detune: Math.random() * 30 - 15,
-    }));
-}
+// set the oscillator type to "triangle"
+// synth.oscillator.type = "square";
 
 // create a panner3D
 const panner = new Tone.Panner3D();
 panner.panningModel = 'HRTF';
 // panner.panningModel = 'equalpower';
+
+// connect synth to panner
+synth.connect(panner);
 
 // initialize panner
 panner.setPosition(0, 0, 0);
@@ -88,28 +86,19 @@ let zPos = 0.0;
 let detuneVal = 0;
 document.getElementById('DetuneAmount').innerText = parseFloat(detuneVal).toFixed(4);
 
-// initialize base freq fact
-baseFreqFact = 1;
-document.getElementById('BaseFreqFact').innerText = parseFloat(baseFreqFact).toFixed(4);
-
 function updateListenerPos() {
     // Tone.Listener.positionX.value = -xPos;
     // Tone.Listener.positionY.value = yPos;
     // Tone.Listener.positionZ.value = -zPos;    
-    Tone.Listener.positionX.rampTo(-xPos,0.01);
-    Tone.Listener.positionY.rampTo(yPos,0.01);
-    Tone.Listener.positionZ.rampTo(-zPos,0.01);
+    Tone.Listener.positionX.rampTo(-xPos, 0.01);
+    Tone.Listener.positionY.rampTo(yPos, 0.01);
+    Tone.Listener.positionZ.rampTo(-zPos, 0.01);
     // console.log("working!")
 };
 updateListenerPos();
 
-// connect oscillators to panner
-oscillators.forEach(o => {
-    o.connect(panner);
-});
-
 // create a freeverb node
-const freeverb = new Tone.Freeverb(0.7,5000);
+const freeverb = new Tone.Freeverb(0.7, 5000);
 
 // connect panner to freeverb¨
 panner.connect(freeverb);
@@ -134,6 +123,34 @@ document.getElementById('Gain').innerText = parseFloat(-30.0).toFixed(4);
 
 
 
+// Clear console after load.. 
+console.clear();
+
+// // create a loop that plays a C4 note every quarter note
+// const loop = new Tone.Loop(time => {
+//     // trigger the synth to play a C4 note at the specified time
+//     synth.triggerAttackRelease("C4", "8n", time);
+//     console.log("happening!");
+// }, '4n');
+
+let bassFreq = 110; // A2
+let notePattern = [bassFreq, bassFreq * 5 / 4, bassFreq * 3 / 2, bassFreq*2/1] // major third, perfect fifth, octave
+// let notePattern = [bassFreq, bassFreq * 5 / 4, bassFreq * 3 / 2, [bassFreq, bassFreq * 5 / 4, bassFreq * 3 / 2]] // major third, perfect fifth, octave
+// let notePattern = [bassFreq,bassFreq*5/4] // major third, perfect fifth, octave
+
+const loop = new Tone.Pattern((time, note) => {
+    // the order of the notes passed in depends on the pattern
+    synth.triggerAttackRelease(note, "8n", time);
+    // console.log("happening!");
+    // console.log(note);
+    // console.log(synth.activeVoices); 
+
+}, notePattern, "upDown");
+
+loop.interval = '4n';
+
+loop.start(0);
+
 button_1.addEventListener("click", async () => {
     await Tone.start();
     console.log("audio is ready");
@@ -143,64 +160,96 @@ button_1.addEventListener("click", async () => {
 
     // SET THE GLOBAL BPM VAL !  
     // Tone.Transport.bpm.value = 240; // working with '4n', i.e. quarter notes afterwards.. so equivalent to '8n' eigth notes at 120 bpm
-    // Tone.Transport.bpm.value = 480; // working with '4n', i.e. quarter notes afterwards.. so equivalent to '8n' eigth notes at 120 bpm
+    Tone.Transport.bpm.value = 480; // working with '4n', i.e. quarter notes afterwards.. so equivalent to '8n' eigth notes at 120 bpm
     // Tone.Transport.bpm.value = 120; 
 
-    oscillators.forEach((o,index) => {
-        o.start();
-        o.volume.rampTo(volumesArray[index], 1);
-    });
 
     flag_audio_on_off = true;
 });
 
 
-// Clear console after load.. 
-console.clear();
+
 
 // var t = Tone.Time("4n");
 // console.log(t);
 
-let valHarmonicity = 0.0;
-let valHarmonicityPrev = 0.0;
+let valPlayback = 0.1;
+let valPlaybackPrev = 0.1;
+function setLoopInterval(v) {
 
-function setHarmonicity(v) {
-
-
-    if (v < 20) v = 20;
-    if (v > 90) v = 90;
-
-    let rangeSize = 90 - 20;
-    let perc_interval = 5;
-    v = Math.floor(v / (perc_interval * rangeSize / 100)) * (perc_interval * rangeSize / 100);
-    if (v < 20) v = 20;
-    if (v > 90) v = 90;
-
-    valHarmonicity = linearMapping(0, 1, 40, 90, v); // 
-    if (valHarmonicity < 0) valHarmonicity = 0;
-    if (valHarmonicity > 1) valHarmonicity = 1;
-
+    // let valPlayback = linearMapping(0.0, 10.0, 0, 1000,  v); 
     // valPlayback = exponentialMapping(0.0, 4.0, 0, 1000, 3., v);
+
+    if (v < 20) v = 20;
+    if (v > 90) v = 90;
+
+    // changing value only in steps of a certain percentage
+    let rangeSize = 90 - 20;
+    let perc_interval = 10;
+    v = Math.floor(v / (perc_interval * rangeSize / 100)) * (perc_interval * rangeSize / 100);
+
+    if (v < 20) v = 20;
+    if (v > 90) v = 90;
+
+    valDetune = linearMapping(1.0, 1 * 2 ** (1 / 12), 40, 90, v); // detuning to max 1 semitones ... 
+
+    v = linearMapping(0.0, 1000.0, 20, 90, v);
+    valPlayback = exponentialMapping(0.0, 4.0, 0, 1000, 3., v);
+
+
+    // console.log(valPlayback);
+    // console.log(valPlaybackPrev);
+
+    let adjustedBPM = valPlaybackPrev * Tone.Transport.bpm.value;
+
+    let prevTimeBetweenBeats = 60 / adjustedBPM / 4; // div by 4 cause I'm working with quarter notes
+
+    let timeNow = Tone.now();
+
+    // valPlayback = 1;
 
     //   console.log(prevTimeBetweenBeats);
 
     // Changing time at the next beep of the prev loop so as to not cause out of phase rhythms
 
-    if (valHarmonicity !== valHarmonicityPrev) {
-        // console.log(valHarmonicity);
-        // console.log(valHarmonicityPrev);
-        // console.log('triggered!');
+    if (valPlayback !== valPlaybackPrev) {
+        console.log(valPlayback);
+        console.log(valPlaybackPrev);
+        console.log('triggered outside scheduledOnce!');
 
-        // Change base freqs of oscillators
-        oscillators.forEach((osc, i) => {
-            // osc.frequency.rampTo(bassFreq * i * linearMapping(1, baseFreqFact, 0, 1, valHarmonicity), 0.5);
-            osc.frequency.rampTo(bassFreq * baseFreqFact + bassFreq * baseFreqFact * (i + valHarmonicity), 0.3);
-            // console.log(baseFreqFact);
-            // osc.detune.rampTo(Math.random() * detuneVal * valHarmonicity, 0.5);
-        });
+        loop.playbackRate = valPlayback;
+
+        notePattern[1] = bassFreq * 5 / 4 * valDetune;
+        notePattern[2] = bassFreq * 3 / 2 * valDetune;
+        notePattern[3] = bassFreq * 2 / 1 * valDetune;
+        // notePattern[3] = bassFreq*2/1*valDetune;
+
+        // // The schedule stuff behaves really badly. gets clogged up in the callback queue and sends multiple requests one after another.. 
+        // Tone.Transport.schedule((time) => {
+        //     console.log(valPlayback);
+        //     console.log(valPlaybackPrev);
+        //     console.log('triggered INSIDE scheduledOnce!');
+
+        //     loop.playbackRate = valPlayback;
+        //     console.log(timeNow, prevTimeBetweenBeats);
+        // }, timeNow + prevTimeBetweenBeats);
     }
+    // loop.interval.rampTo(valScaled,1); // NOT WORKING ! 
 
-    valHarmonicityPrev = valHarmonicity;
+    // // Changing time at the next subdivision so as to not cause out of phase rhythms
+    // let timeNextSubDiv = Tone.Transport.nextSubdivision("4n"); // must be same as the loop time..
+    // Tone.Transport.schedule((time) => {
+    //   loop.playbackRate = valPlayback;
+    // }, timeNextSubDiv);
+
+    valPlaybackPrev = valPlayback;
+
+    // console.log(timeNow);
+    // console.log(timeNextSubDiv);
+
+    // loop.playbackRate = valPlayback;
+
+    // document.getElementById('Interval').innerText = parseFloat(valPlayback).toFixed(4);
 
 }
 
@@ -231,17 +280,8 @@ function setDampening(v) {
 }
 
 function setDetune(v) {
-    detuneVal = linearMapping(0, 1200, 0, 10000, v); // db linear Scale
-    document.getElementById('DetuneAmount').innerText = parseFloat(detuneVal).toFixed(4);
-    // console.log(freeverb.dampening);
-}
 
-function setBaseFreqFact(v) {
-    baseFreqFact = linearMapping(0.5, 3, 0, 10000, v); // db linear Scale
-    document.getElementById('BaseFreqFact').innerText = parseFloat(baseFreqFact).toFixed(4);
-    // console.log(freeverb.dampening);
 }
-
 
 function setXPos(v) {
     if (v > -10 && v < 10) {
@@ -267,23 +307,9 @@ function setZPos(v) {
 }
 
 
-// function t_stop() {
-//     console.log("stopping");
-//     console.log("why?");
-//     Tone.Transport.stop();
-// }
-
-// button_2.addEventListener("click",t_stop);
-
 button_2.addEventListener("click", async () => {
-    console.log("stopping Oscillators!");
-
-    oscillators.forEach(o => {
-        o.stop("+1.2");
-        o.volume.rampTo(-Infinity, 1);
-    });
-
-    // flag_audio_on_off = false;
+    console.log("stopping audio!");
+    Tone.Transport.stop();
 });
 //---------------------------------------------------------------------------------------------------------------
 
@@ -349,12 +375,12 @@ video.addEventListener('play', () => {
         yaw_array[index % lenMovAvg] = yawFromVideo;
         pitch_array[index % lenMovAvg] = pitchFromVideo;
 
-        if (flag_audio_on_off){
+        if (flag_audio_on_off) {
             setXPos(average(yaw_array));
             setYPos(average(dist_points_array));
             setZPos(average(pitch_array));
 
-            setHarmonicity(average(dist_points_array));
+            setLoopInterval(average(dist_points_array));
             updateListenerPos()
         }
         index++;
